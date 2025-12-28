@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth-service/auth"
 	"auth-service/handlers"
 	"auth-service/utils"
 	"database/sql"
@@ -19,12 +20,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	publicKey, err := utils.LoadPublicKey("/keys/public.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	authMiddleware := auth.AuthMiddleware(publicKey)
 
 	h := handlers.New(db, privateKey)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/register", h.Register)
 	mux.HandleFunc("/login", h.Login)
-
+	mux.HandleFunc("/users", h.GetUser)
+	mux.Handle("/users/update", authMiddleware(http.HandlerFunc(h.UpdateProfile)))
 	log.Println("Auth service started on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }
