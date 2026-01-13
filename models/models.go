@@ -1,0 +1,32 @@
+package models
+
+type RegisterRequest struct {
+	Email       string  `json:"email"`
+	Nickname    string  `json:"nickname"`
+	Password    string  `json:"password"`
+	Photo       *string `json:"photo"`
+	City        *string `json:"city"`
+	Status      string  `json:"status"`
+	AgreementPD bool    `json:"agreement_pd"`
+	AgreementEA bool    `json:"agreement_ea"`
+}
+
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type UserInfo struct {
+	Email    string  `json:"email"`
+	Nickname string  `json:"nickname"`
+	Photo    *string `json:"photo"`
+	City     *string `json:"city"`
+	Status   string  `json:"status"`
+}
+
+type UpdateProfileRequest struct {
+	Nickname *string `json:"nickname"`
+	Photo    *string `json:"photo"`
+	City     *string `json:"city"`
+	Status   *string `json:"status"`
+}

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"auth-service/models"
 	"auth-service/repository"
 	"auth-service/utils"
 	"database/sql"
@@ -17,46 +18,16 @@ func New(db *sql.DB, privateKey interface{}) *Handler {
 	return &Handler{db, privateKey}
 }
 
-type RegisterRequest struct {
-	Email       string  `json:"email"`
-	Nickname    string  `json:"nickname"`
-	Password    string  `json:"password"`
-	Photo       *string `json:"photo"`
-	City        *string `json:"city"`
-	Status      string  `json:"status"`
-	AgreementPD string  `json:"agreement_pd"`
-	AgreementEA string  `json:"agreement_ea"`
-}
-
-type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-type UserInfo struct {
-	Email    string  `json:"email"`
-	Nickname string  `json:"nickname"`
-	Photo    *string `json:"photo"`
-	City     *string `json:"city"`
-	Status   string  `json:"status"`
-}
-
-type UpdateProfileRequest struct {
-	Nickname *string `json:"nickname"`
-	Photo    *string `json:"photo"`
-	City     *string `json:"city"`
-	Status   *string `json:"status"`
-}
-
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	var req RegisterRequest
+	var req models.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
 	}
 
 	if err := repository.CreateUser(h.db, req); err != nil {
@@ -73,7 +44,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req LoginRequest
+	var req models.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
@@ -122,7 +93,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req UpdateProfileRequest
+	var req models.UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return

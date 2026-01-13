@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"auth-service/handlers"
+	"auth-service/models"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func CreateUser(db *sql.DB, user handlers.RegisterRequest) error {
+func CreateUser(db *sql.DB, user models.RegisterRequest) error {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	_, err := db.Exec("INSERT INTO users (email, nickname, password, photo, city, status, agreement_pd, agreement_ea) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
 		user.Email, user.Nickname, hash, user.Photo, user.City, user.Status, user.AgreementPD, user.AgreementEA)
@@ -30,8 +30,8 @@ func Authenticate(db *sql.DB, email, password string) (string, error) {
 	return id, nil
 }
 
-func GetUser(db *sql.DB, id string) (handlers.UserInfo, error) {
-	var userInfo handlers.UserInfo
+func GetUser(db *sql.DB, id string) (models.UserInfo, error) {
+	var userInfo models.UserInfo
 	err := db.QueryRow("SELECT email, nickname, photo, city, status FROM users WHERE id = $1", id).Scan(
 		&userInfo.Email,
 		&userInfo.Nickname,
@@ -47,7 +47,7 @@ func GetUser(db *sql.DB, id string) (handlers.UserInfo, error) {
 	return userInfo, nil
 }
 
-func UpdateUser(db *sql.DB, userId string, user handlers.UpdateProfileRequest) error {
+func UpdateUser(db *sql.DB, userId string, user models.UpdateProfileRequest) error {
 	query := "UPDATE users SET "
 	args := []interface{}{}
 	idx := 1

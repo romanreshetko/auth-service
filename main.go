@@ -2,25 +2,33 @@ package main
 
 import (
 	"auth-service/auth"
+	DB "auth-service/db"
 	"auth-service/handlers"
 	"auth-service/utils"
-	"database/sql"
 	"log"
 	"net/http"
 	"os"
 )
 
 func main() {
-	db, err := sql.Open("postgres", os.Getenv("DB_CONN"))
+	cnf := DB.Config{
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		Name:     os.Getenv("DB_NAME"),
+		SSLMode:  os.Getenv("DB_SSLMODE"),
+	}
+	db, err := DB.ConnectWithRetry(cnf)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	privateKey, err := utils.LoadPrivateKey("/keys/private.pem")
+	privateKey, err := utils.LoadPrivateKey("./keys/private.pem")
 	if err != nil {
 		log.Fatal(err)
 	}
-	publicKey, err := utils.LoadPublicKey("/keys/public.pem")
+	publicKey, err := utils.LoadPublicKey("./keys/public.pem")
 	if err != nil {
 		log.Fatal(err)
 	}
