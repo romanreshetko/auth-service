@@ -24,15 +24,16 @@ func LoadPublicKey(path string) (*rsa.PublicKey, error) {
 	return jwt.ParseRSAPublicKeyFromPEM(data)
 }
 
-func GenerateJWT(userID string, key interface{}) (string, error) {
+func GenerateJWT(userID string, role string, key interface{}) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"user_id": userID,
+		"role":    role,
 		"exp":     time.Now().Add(time.Hour * 24).Unix(),
 	})
 	return token.SignedString(key)
 }
 
-func ParseToken(tokenString string, publicKey *rsa.PublicKey) (string, error) {
+func ParseToken(tokenString string, publicKey *rsa.PublicKey) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -41,18 +42,13 @@ func ParseToken(tokenString string, publicKey *rsa.PublicKey) (string, error) {
 	})
 
 	if err != nil || !token.Valid {
-		return "", errors.New("invalid token")
+		return nil, errors.New("invalid token")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
-		return "", errors.New("invalid token")
+		return nil, errors.New("invalid token")
 	}
 
-	userId, ok := claims["user_id"].(string)
-	if !ok {
-		return "", errors.New("invalid token")
-	}
-
-	return userId, nil
+	return claims, nil
 }

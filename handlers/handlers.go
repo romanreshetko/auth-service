@@ -50,13 +50,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := repository.Authenticate(h.db, req.Email, req.Password)
+	userID, role, err := repository.Authenticate(h.db, req.Email, req.Password)
 	if err != nil {
 		http.Error(w, "failed to authenticate", http.StatusUnauthorized)
 		return
 	}
 
-	token, err := utils.GenerateJWT(userID, h.privateKey)
+	token, err := utils.GenerateJWT(userID, role, h.privateKey)
 	if err != nil {
 		http.Error(w, "token error", http.StatusInternalServerError)
 		return
@@ -87,7 +87,8 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
-	userId, ok := r.Context().Value("userId").(string)
+	claims, ok := r.Context().Value("claims").(models.AuthContext)
+	userId := claims.UserID
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
@@ -106,4 +107,29 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handler) CreateModerator(w http.ResponseWriter, r *http.Request) {
+	claims, ok := r.Context().Value("claims").(models.AuthContext)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if claims.Role != "admin" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	var req models.RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+
+	if err := repository.CreateUser(h.db, req); err != nil {
+		http.Error(w, "failed to create user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 }

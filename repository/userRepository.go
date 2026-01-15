@@ -12,22 +12,22 @@ import (
 
 func CreateUser(db *sql.DB, user models.RegisterRequest) error {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	_, err := db.Exec("INSERT INTO users (email, nickname, password, photo, city, status, agreement_pd, agreement_ea) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
-		user.Email, user.Nickname, hash, user.Photo, user.City, user.Status, user.AgreementPD, user.AgreementEA)
+	_, err := db.Exec("INSERT INTO users (email, nickname, password, user_role, photo, city, status, agreement_pd, agreement_ea) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+		user.Email, user.Nickname, hash, user.Role, user.Photo, user.City, user.Status, user.AgreementPD, user.AgreementEA)
 	return err
 }
 
-func Authenticate(db *sql.DB, email, password string) (string, error) {
-	var id, hash string
-	err := db.QueryRow("SELECT id, password FROM users WHERE email = $1", email).Scan(&id, &hash)
+func Authenticate(db *sql.DB, email, password string) (string, string, error) {
+	var id, hash, role string
+	err := db.QueryRow("SELECT id, password, user_role FROM users WHERE email = $1", email).Scan(&id, &hash, &role)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
-		return "", errors.New("invalid password")
+		return "", "", errors.New("invalid password")
 	}
 
-	return id, nil
+	return id, role, nil
 }
 
 func GetUser(db *sql.DB, id string) (models.UserInfo, error) {

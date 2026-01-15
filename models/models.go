@@ -4,11 +4,12 @@ type RegisterRequest struct {
 	Email       string  `json:"email"`
 	Nickname    string  `json:"nickname"`
 	Password    string  `json:"password"`
+	Role        string  `json:"role"`
 	Photo       *string `json:"photo"`
 	City        *string `json:"city"`
-	Status      string  `json:"status"`
-	AgreementPD bool    `json:"agreement_pd"`
-	AgreementEA bool    `json:"agreement_ea"`
+	Status      *string `json:"status"`
+	AgreementPD *bool   `json:"agreement_pd"`
+	AgreementEA *bool   `json:"agreement_ea"`
 }
 
 type LoginRequest struct {
@@ -29,4 +30,8 @@ type UpdateProfileRequest struct {
 	Photo    *string `json:"photo"`
 	City     *string `json:"city"`
 	Status   *string `json:"status"`
+}
+type AuthContext struct {
+	UserID string
+	Role   string
 }

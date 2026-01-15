@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"auth-service/models"
 	"auth-service/utils"
 	"context"
 	"crypto/rsa"
@@ -24,14 +25,17 @@ func AuthMiddleware(publicKey *rsa.PublicKey) func(http.Handler) http.Handler {
 				return
 			}
 
-			userId, err := utils.ParseToken(parts[1], publicKey)
+			claims, err := utils.ParseToken(parts[1], publicKey)
 			if err != nil {
 				http.Error(w, "invalid token", http.StatusUnauthorized)
 				return
 			}
 
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, "userId", userId)
+			ctx = context.WithValue(ctx, "claims", models.AuthContext{
+				UserID: claims["user_id"].(string),
+				Role:   claims["role"].(string),
+			})
 
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
