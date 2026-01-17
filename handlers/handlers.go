@@ -52,6 +52,10 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	userID, role, err := repository.Authenticate(h.db, req.Email, req.Password)
 	if err != nil {
+		if err.Error() == "invalid password" {
+			http.Error(w, "failed to authenticate", http.StatusUnauthorized)
+			return
+		}
 		http.Error(w, "failed to authenticate", http.StatusUnauthorized)
 		return
 	}

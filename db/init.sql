@@ -12,3 +12,12 @@ CREATE TABLE IF NOT EXISTS users (
     agreement_pd BOOlEAN,
     agreement_ea BOOlEAN
 );
+
+INSERT INTO users
+(email, nickname, password, user_role)
+SELECT current_setting('ADMIN_EMAIL'), 'admin',
+       current_setting('ADMIN_HASH'), 'admin'
+WHERE NOT EXISTS (
+    SELECT 1 FROM users
+    WHERE user_role = 'admin'
+);
