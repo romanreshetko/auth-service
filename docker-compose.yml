@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16
     container_name: auth-postgres
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -15,8 +16,10 @@ services:
   auth-service:
     build: .
     container_name: auth-service
+    restart: unless-stopped
     depends_on:
       - postgres
+      - mailhog
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
@@ -28,7 +31,15 @@ services:
       ADMIN_HASH: ${ADMIN_HASH}
     volumes:
       - ./keys/private.pem:/app/keys/private.pem:ro
+      - ./keys/public.pem:/app/keys/public.pem:ro
     ports:
       - "8080:8080"
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 volumes:
   pgdata:

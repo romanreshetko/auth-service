@@ -35,3 +35,12 @@ type AuthContext struct {
 	UserID string
 	Role   string
 }
+
+type VerifyEmailRequest struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
+}
+
+type ResendRequest struct {
+	Email string `json:"email"`
+}
