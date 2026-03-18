@@ -33,7 +33,7 @@ func AuthMiddleware(publicKey *rsa.PublicKey) func(http.Handler) http.Handler {
 
 			ctx := r.Context()
 			ctx = context.WithValue(ctx, "claims", models.AuthContext{
-				UserID: claims["user_id"].(string),
+				UserID: claims["user_id"].(int64),
 				Role:   claims["role"].(string),
 			})
 

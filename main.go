@@ -42,7 +42,8 @@ func main() {
 	mux.HandleFunc("/resend", h.ResendEmail)
 	mux.HandleFunc("/login", h.Login)
 	mux.HandleFunc("/user", h.GetUser)
-	mux.Handle("/users/update", authMiddleware(http.HandlerFunc(h.UpdateProfile)))
+	mux.Handle("/user/update", authMiddleware(http.HandlerFunc(h.UpdateProfile)))
+	mux.Handle("/moderator/create", authMiddleware(http.HandlerFunc(h.CreateModerator)))
 	log.Println("Auth service started on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

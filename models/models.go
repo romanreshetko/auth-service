@@ -32,7 +32,7 @@ type UpdateProfileRequest struct {
 	Status   *string `json:"status"`
 }
 type AuthContext struct {
-	UserID string
+	UserID int64
 	Role   string
 }
 

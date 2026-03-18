@@ -24,7 +24,7 @@ func LoadPublicKey(path string) (*rsa.PublicKey, error) {
 	return jwt.ParseRSAPublicKeyFromPEM(data)
 }
 
-func GenerateJWT(userID string, role string, key interface{}) (string, error) {
+func GenerateJWT(userID int64, role string, key interface{}) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,

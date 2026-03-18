@@ -17,15 +17,6 @@ CREATE TABLE IF NOT EXISTS email_verifications (
     id BIGSERIAL PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     code TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW()
-    expires_at TIMESTAMP DEFAULT NOW() + interval '10 mimutes'
-);
-
-INSERT INTO users
-(email, nickname, password, user_role)
-SELECT current_setting('ADMIN_EMAIL'), 'admin',
-       current_setting('ADMIN_HASH'), 'admin'
-WHERE NOT EXISTS (
-    SELECT 1 FROM users
-    WHERE user_role = 'admin'
+    created_at TIMESTAMP DEFAULT NOW(),
+    expires_at TIMESTAMP DEFAULT NOW() + interval '10 minutes'
 );

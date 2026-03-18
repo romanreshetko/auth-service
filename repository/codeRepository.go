@@ -67,7 +67,7 @@ func CheckResendCode(db *sql.DB, email string) (bool, error) {
 	err := db.QueryRow(`
 		SELECT id FROM email_verifications
 		WHERE email = $1
-		AND NOW() - created_at > interval '30 seconds'
+		AND NOW() - created_at > interval '60 seconds'
 `, email).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil

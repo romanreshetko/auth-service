@@ -68,7 +68,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	userID, role, err := repository.Authenticate(h.db, req.Email, req.Password)
 	if err != nil {
 		if err.Error() == "invalid password" {
-			http.Error(w, "failed to authenticate", http.StatusUnauthorized)
+			http.Error(w, "invalid password", http.StatusUnauthorized)
+			return
+		}
+		if err.Error() == "email not verified" {
+			http.Error(w, "email not verified", http.StatusUnauthorized)
 			return
 		}
 		http.Error(w, "failed to authenticate", http.StatusUnauthorized)
@@ -86,10 +90,20 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "token error", http.StatusInternalServerError)
 		return
 	}
+
 }
 
 func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
-	userId := r.URL.Query().Get("user_id")
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userId, err := strconv.ParseInt(r.URL.Query().Get("user_id"), 10, 64)
+	if err != nil {
+		http.Error(w, "invalid user_id", http.StatusBadRequest)
+		return
+	}
 	user, err := repository.GetUser(h.db, userId)
 	if err != nil {
 		if err.Error() == "user not found" {
@@ -106,6 +120,11 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	claims, ok := r.Context().Value("claims").(models.AuthContext)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -115,11 +134,6 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	userId, err := strconv.ParseInt(claims.UserID, 10, 64)
-	if err != nil {
-		http.Error(w, "incorrect user_id", http.StatusUnauthorized)
-		return
-	}
 
 	var req models.UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -127,16 +141,21 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repository.UpdateUser(h.db, userId, req)
+	err := repository.UpdateUser(h.db, claims.UserID, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (h *Handler) CreateModerator(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	claims, ok := r.Context().Value("claims").(models.AuthContext)
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -162,6 +181,11 @@ func (h *Handler) CreateModerator(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var req models.VerifyEmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
@@ -197,6 +221,11 @@ func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ResendEmail(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var req models.ResendRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)

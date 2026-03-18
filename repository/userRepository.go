@@ -17,20 +17,25 @@ func CreateUser(db *sql.DB, user models.RegisterRequest) error {
 	return err
 }
 
-func Authenticate(db *sql.DB, email, password string) (string, string, error) {
-	var id, hash, role string
-	err := db.QueryRow("SELECT id, password, user_role FROM users WHERE email = $1", email).Scan(&id, &hash, &role)
+func Authenticate(db *sql.DB, email, password string) (int64, string, error) {
+	var id int64
+	var hash, role string
+	var emailVerified bool
+	err := db.QueryRow("SELECT id, password, user_role, email_verified FROM users WHERE email = $1", email).Scan(&id, &hash, &role, &emailVerified)
 	if err != nil {
-		return "", "", err
+		return 0, "", err
+	}
+	if !emailVerified {
+		return 0, "", errors.New("email not verified")
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)); err != nil {
-		return "", "", errors.New("invalid password")
+		return 0, "", errors.New("invalid password")
 	}
 
 	return id, role, nil
 }
 
-func GetUser(db *sql.DB, id string) (models.UserInfo, error) {
+func GetUser(db *sql.DB, id int64) (models.UserInfo, error) {
 	var userInfo models.UserInfo
 	err := db.QueryRow("SELECT email, nickname, photo, city, status FROM users WHERE id = $1", id).Scan(
 		&userInfo.Email,
