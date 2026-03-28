@@ -130,7 +130,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	if claims.Role != "user" {
+	if claims.Role != "user" && claims.Role != "moderator" && claims.Role != "admin" {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -172,10 +172,20 @@ func (h *Handler) CreateModerator(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	password := utils.GeneratePassword()
+	req.Password = password
+
 	if err := repository.CreateUser(h.db, req); err != nil {
 		http.Error(w, "failed to create user", http.StatusInternalServerError)
 		return
 	}
+
+	go func() {
+		err := mail.SendTemporaryPasswordEmail(req.Email, password)
+		if err != nil {
+			log.Println("failed to send temporary code")
+		}
+	}()
 
 	w.WriteHeader(http.StatusCreated)
 }

@@ -33,3 +33,14 @@ func SendVerificationEmail(email, code string) error {
 
 	return mailer.SendMail(email, "Email verification", body)
 }
+
+func SendTemporaryPasswordEmail(email, password string) error {
+	mailer := NewMailer("mailhog", 1025, "noreply@cityviewpoint.ru")
+
+	body := fmt.Sprintf(
+		"Your temporary password is %s\n. Change it after login",
+		password,
+	)
+
+	return mailer.SendMail(email, "Temporary password", body)
+}

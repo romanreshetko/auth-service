@@ -12,8 +12,12 @@ import (
 
 func CreateUser(db *sql.DB, user models.RegisterRequest) error {
 	hash, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	_, err := db.Exec("INSERT INTO users (email, nickname, password, user_role, photo, city, status, points, agreement_pd, agreement_ea) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
-		user.Email, user.Nickname, hash, user.Role, SafeDeref(user.Photo), SafeDeref(user.City), SafeDeref(user.Status), 10, SafeDeref(user.AgreementPD), SafeDeref(user.AgreementEA))
+	emailVerified := false
+	if user.Role == "moderator" {
+		emailVerified = true
+	}
+	_, err := db.Exec("INSERT INTO users (email, nickname, password, user_role, photo, city, status, points, agreement_pd, agreement_ea, email_verified) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+		user.Email, user.Nickname, hash, user.Role, SafeDeref(user.Photo), SafeDeref(user.City), SafeDeref(user.Status), 10, SafeDeref(user.AgreementPD), SafeDeref(user.AgreementEA), emailVerified)
 	return err
 }
 
@@ -78,6 +82,13 @@ func UpdateUser(db *sql.DB, userId int64, user models.UpdateProfileRequest) erro
 	if user.Status != nil {
 		query += fmt.Sprintf("status = $%d, ", idx)
 		args = append(args, *user.Status)
+		idx++
+	}
+
+	if user.Password != nil {
+		query += fmt.Sprintf("password = $%d, ", idx)
+		hash, _ := bcrypt.GenerateFromPassword([]byte(*user.Password), bcrypt.DefaultCost)
+		args = append(args, hash)
 		idx++
 	}
 

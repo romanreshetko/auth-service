@@ -30,6 +30,7 @@ type UpdateProfileRequest struct {
 	Photo    *string `json:"photo"`
 	City     *string `json:"city"`
 	Status   *string `json:"status"`
+	Password *string `json:"password"`
 }
 type AuthContext struct {
 	UserID int64
