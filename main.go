@@ -36,7 +36,9 @@ func main() {
 	authMiddleware := auth.AuthMiddleware(publicKey)
 
 	h := handlers.New(db, privateKey)
+	fs := http.FileServer(http.Dir("./uploads/users"))
 	mux := http.NewServeMux()
+	mux.Handle("/static/", http.StripPrefix("/static/", fs))
 	mux.HandleFunc("/register", h.Register)
 	mux.HandleFunc("/verify", h.VerifyEmail)
 	mux.HandleFunc("/resend", h.ResendEmail)
@@ -44,6 +46,7 @@ func main() {
 	mux.HandleFunc("/user", h.GetUser)
 	mux.Handle("/user/update", authMiddleware(http.HandlerFunc(h.UpdateProfile)))
 	mux.Handle("/moderator/create", authMiddleware(http.HandlerFunc(h.CreateModerator)))
+	mux.Handle("/user/points/update", authMiddleware(http.HandlerFunc(h.UpdateUserPointsHandler)))
 	log.Println("Auth service started on port 8080")
 	log.Fatal(http.ListenAndServe(":8080", mux))
 }

@@ -104,6 +104,24 @@ func UpdateUser(db *sql.DB, userId int64, user models.UpdateProfileRequest) erro
 	return err
 }
 
+func UpdateUserPoints(db *sql.DB, userID, pointsAdd int64) error {
+	res, err := db.Exec(`
+		UPDATE users
+		SET points = points + $1
+		WHERE id = $2
+`, pointsAdd, userID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := res.RowsAffected()
+	if rowsAffected == 0 {
+		return errors.New("user not found")
+	}
+
+	return nil
+}
+
 func SafeDeref[T any](v *T) any {
 	if v == nil {
 		return nil

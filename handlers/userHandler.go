@@ -26,11 +26,29 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if err := r.ParseMultipartForm(64 << 20); err != nil {
+		http.Error(w, "multipart too large", http.StatusBadRequest)
+		return
+	}
+
+	request := r.FormValue("request")
+	if request == "" {
+		http.Error(w, "missing review", http.StatusBadRequest)
+		return
+	}
 
 	var req models.RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.Unmarshal([]byte(request), &req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
+	}
+	if req.Photo != nil {
+		photo, err := utils.SavePhoto(r, *(req.Photo))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		*(req.Photo) = photo
 	}
 
 	if err := repository.CreateUser(h.db, req); err != nil {
@@ -135,10 +153,30 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := r.ParseMultipartForm(64 << 20); err != nil {
+		http.Error(w, "multipart too large", http.StatusBadRequest)
+		return
+	}
+
+	request := r.FormValue("request")
+	if request == "" {
+		http.Error(w, "missing request", http.StatusBadRequest)
+		return
+	}
+
 	var req models.UpdateProfileRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := json.Unmarshal([]byte(request), &req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
 		return
+	}
+
+	if req.Photo != nil {
+		photo, err := utils.SavePhoto(r, *(req.Photo))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		*(req.Photo) = photo
 	}
 
 	err := repository.UpdateUser(h.db, claims.UserID, req)
@@ -150,9 +188,9 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) CreateModerator(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func (h *Handler) UpdateUserPointsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -161,111 +199,31 @@ func (h *Handler) CreateModerator(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	if claims.Role != "admin" {
+	if claims.Role != "service" {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
 
-	var req models.RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-
-	password := utils.GeneratePassword()
-	req.Password = password
-
-	if err := repository.CreateUser(h.db, req); err != nil {
-		http.Error(w, "failed to create user", http.StatusInternalServerError)
-		return
-	}
-
-	go func() {
-		err := mail.SendTemporaryPasswordEmail(req.Email, password)
-		if err != nil {
-			log.Println("failed to send temporary code")
-		}
-	}()
-
-	w.WriteHeader(http.StatusCreated)
-}
-
-func (h *Handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req models.VerifyEmailRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-
-	correctCode, err := repository.VerifyCode(h.db, req.Email, req.Code)
+	userID, err := strconv.ParseInt(r.URL.Query().Get("user_id"), 10, 64)
 	if err != nil {
-		http.Error(w, "failed to verify code", http.StatusInternalServerError)
+		http.Error(w, "incorrect user_id", http.StatusBadRequest)
 		return
 	}
-	if !correctCode {
-		w.Header().Set("Content-Type", "application/json")
-		err := json.NewEncoder(w).Encode(map[string]bool{"verified": correctCode})
-		if err != nil {
+	points, err := strconv.ParseInt(r.URL.Query().Get("points"), 10, 32)
+	if err != nil {
+		http.Error(w, "incorrect points value", http.StatusBadRequest)
+		return
+	}
+
+	err = repository.UpdateUserPoints(h.db, userID, points)
+	if err != nil {
+		if err.Error() == "user not found" {
+			http.Error(w, "user not found", http.StatusNotFound)
 			return
 		}
+		http.Error(w, "error updating points", http.StatusInternalServerError)
 		return
 	}
-
-	err = repository.ConfirmEmail(h.db, req.Email)
-	if err != nil {
-		http.Error(w, "failed to confirm email", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(map[string]bool{"verified": correctCode})
-	if err != nil {
-		return
-	}
-
-}
-
-func (h *Handler) ResendEmail(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req models.ResendRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
-		return
-	}
-
-	checkedResend, err := repository.CheckResendCode(h.db, req.Email)
-	if err != nil {
-		http.Error(w, "failed to check resend code", http.StatusInternalServerError)
-		return
-	}
-
-	if !checkedResend {
-		w.Header().Set("Content-Type", "application/json")
-		err = json.NewEncoder(w).Encode(map[string]string{"status": "too early request"})
-		w.WriteHeader(http.StatusTooEarly)
-		return
-	}
-
-	code := utils.GenerateVerificationCode()
-	if err := repository.InsertCode(h.db, req.Email, code); err != nil {
-		http.Error(w, "failed to insert code", http.StatusInternalServerError)
-		return
-	}
-	go func() {
-		err := mail.SendVerificationEmail(req.Email, code)
-		if err != nil {
-			log.Println("failed to send verification email")
-		}
-	}()
 
 	w.WriteHeader(http.StatusOK)
 }
