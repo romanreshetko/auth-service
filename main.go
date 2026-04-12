@@ -1,9 +1,9 @@
 package main
 
 import (
-	"auth-service/auth"
 	DB "auth-service/db"
 	"auth-service/handlers"
+	"auth-service/middlewares"
 	"auth-service/utils"
 	"log"
 	"net/http"
@@ -33,7 +33,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	authMiddleware := auth.AuthMiddleware(publicKey)
+	authMiddleware := middlewares.AuthMiddleware(publicKey)
 
 	h := handlers.New(db, privateKey)
 	fs := http.FileServer(http.Dir("./uploads/users"))
@@ -47,6 +47,7 @@ func main() {
 	mux.Handle("/user/update", authMiddleware(http.HandlerFunc(h.UpdateProfile)))
 	mux.Handle("/moderator/create", authMiddleware(http.HandlerFunc(h.CreateModerator)))
 	mux.Handle("/user/points/update", authMiddleware(http.HandlerFunc(h.UpdateUserPointsHandler)))
+	handlerWithCors := middlewares.CorsMiddleware(mux)
 	log.Println("Auth service started on port 8080")
-	log.Fatal(http.ListenAndServe(":8080", mux))
+	log.Fatal(http.ListenAndServe(":8080", handlerWithCors))
 }
