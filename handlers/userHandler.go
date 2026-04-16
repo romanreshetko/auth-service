@@ -111,7 +111,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetUserById(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -126,6 +126,44 @@ func (h *Handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err.Error() == "user not found" {
 			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "failed to get user", http.StatusInternalServerError)
+		return
+	}
+
+	if user.Role != "user" {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		return
+	}
+}
+
+func (h *Handler) GetUserByToken(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	claims, ok := r.Context().Value("claims").(models.AuthContext)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if claims.Role != "user" && claims.Role != "moderator" && claims.Role != "admin" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	user, err := repository.GetUser(h.db, claims.UserID)
+	if err != nil {
+		if err.Error() == "user not found" {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
 		}
 		http.Error(w, "failed to get user", http.StatusInternalServerError)
 		return

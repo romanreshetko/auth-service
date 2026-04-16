@@ -41,11 +41,13 @@ func Authenticate(db *sql.DB, email, password string) (int64, string, error) {
 
 func GetUser(db *sql.DB, id int64) (models.UserInfo, error) {
 	var userInfo models.UserInfo
-	err := db.QueryRow("SELECT email, nickname, photo, city, status FROM users WHERE id = $1", id).Scan(
+	err := db.QueryRow("SELECT email, nickname, user_role, photo, city, points, status FROM users WHERE id = $1", id).Scan(
 		&userInfo.Email,
 		&userInfo.Nickname,
+		&userInfo.Role,
 		&userInfo.Photo,
 		&userInfo.City,
+		&userInfo.Points,
 		&userInfo.Status)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

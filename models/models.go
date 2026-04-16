@@ -20,9 +20,11 @@ type LoginRequest struct {
 type UserInfo struct {
 	Email    string  `json:"email"`
 	Nickname string  `json:"nickname"`
+	Role     string  `json:"role"`
 	Photo    *string `json:"photo"`
 	City     *string `json:"city"`
-	Status   string  `json:"status"`
+	Points   *int    `json:"points"`
+	Status   *string `json:"status"`
 }
 
 type UpdateProfileRequest struct {
