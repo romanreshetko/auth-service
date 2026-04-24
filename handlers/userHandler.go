@@ -14,11 +14,12 @@ import (
 
 type Handler struct {
 	db         *sql.DB
+	mailer     *mail.Mailer
 	privateKey interface{}
 }
 
-func New(db *sql.DB, privateKey interface{}) *Handler {
-	return &Handler{db, privateKey}
+func New(db *sql.DB, mailer *mail.Mailer, privateKey interface{}) *Handler {
+	return &Handler{db, mailer, privateKey}
 }
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
@@ -62,9 +63,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go func() {
-		err := mail.SendVerificationEmail(req.Email, code)
+		log.Println("sending code ", code)
+		err := mail.SendVerificationEmail(h.mailer, req.Email, code)
 		if err != nil {
-			log.Println("failed to send verification email")
+			log.Printf("failed to send verification email %v", err)
 		}
 	}()
 
@@ -264,4 +266,31 @@ func (h *Handler) UpdateUserPointsHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) GetEmailInfoById(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	userId, err := strconv.ParseInt(r.URL.Query().Get("user_id"), 10, 64)
+	if err != nil {
+		http.Error(w, "invalid user_id", http.StatusBadRequest)
+		return
+	}
+	user, err := repository.GetEmailInfo(h.db, userId)
+	if err != nil {
+		if err.Error() == "user not found" {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "failed to get user", http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(user)
+	if err != nil {
+		return
+	}
 }

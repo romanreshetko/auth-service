@@ -41,7 +41,8 @@ func (h *Handler) CreateModerator(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go func() {
-		err := mail.SendTemporaryPasswordEmail(req.Email, password)
+		log.Println("Sending pass: ", password)
+		err := mail.SendTemporaryPasswordEmail(h.mailer, req.Email, password)
 		if err != nil {
 			log.Println("failed to send temporary code")
 		}

@@ -6,7 +6,7 @@ type RegisterRequest struct {
 	Password    string  `json:"password"`
 	Role        string  `json:"role"`
 	Photo       *string `json:"photo"`
-	City        *string `json:"city"`
+	City        *int64  `json:"city"`
 	Status      *string `json:"status"`
 	AgreementPD *bool   `json:"agreement_pd"`
 	AgreementEA *bool   `json:"agreement_ea"`
@@ -22,7 +22,7 @@ type UserInfo struct {
 	Nickname string  `json:"nickname"`
 	Role     string  `json:"role"`
 	Photo    *string `json:"photo"`
-	City     *string `json:"city"`
+	City     *int64  `json:"city"`
 	Points   *int    `json:"points"`
 	Status   *string `json:"status"`
 }
@@ -30,7 +30,7 @@ type UserInfo struct {
 type UpdateProfileRequest struct {
 	Nickname *string `json:"nickname"`
 	Photo    *string `json:"photo"`
-	City     *string `json:"city"`
+	City     *int64  `json:"city"`
 	Status   *string `json:"status"`
 	Password *string `json:"password"`
 }
@@ -46,4 +46,9 @@ type VerifyEmailRequest struct {
 
 type ResendRequest struct {
 	Email string `json:"email"`
+}
+
+type EmailInfo struct {
+	Email    string `json:"email"`
+	Nickname string `json:"nickname"`
 }

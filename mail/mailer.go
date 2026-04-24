@@ -3,44 +3,51 @@ package mail
 import (
 	"fmt"
 	"net/smtp"
+	"os"
 )
 
 type Mailer struct {
 	host string
-	port int
+	port string
 	from string
 }
 
-func NewMailer(host string, port int, from string) *Mailer {
+func NewMailer(from string) *Mailer {
+	host := os.Getenv("SMTP_HOST")
+	port := os.Getenv("SMTP_PORT")
 	return &Mailer{host: host, port: port, from: from}
 }
 
 func (m *Mailer) SendMail(to, subject, body string) error {
-	addr := fmt.Sprintf("%s:%d", m.host, m.port)
+	user := os.Getenv("SMTP_USER")
+	password := os.Getenv("SMTP_PASS")
+	addr := fmt.Sprintf("%s:%s", m.host, m.port)
+	auth := smtp.PlainAuth("", user, password, m.host)
+	msg := []byte("To: " + to + "\r\n" +
+		"From: " + m.from + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-Version: 1.0\r\n" +
+		"Content-Type: text/html; charset=\"UTF-8\"\r\n" +
+		"\r\n" +
+		body)
 
-	msg := []byte("To: " + to + "\r\nSubject: " + subject + "\r\n\r\n" + body)
-
-	return smtp.SendMail(addr, nil, m.from, []string{to}, msg)
+	return smtp.SendMail(addr, auth, m.from, []string{to}, msg)
 }
 
-func SendVerificationEmail(email, code string) error {
-	mailer := NewMailer("mailhog", 1025, "noreply@cityviewpoint.ru")
-
+func SendVerificationEmail(mailer *Mailer, email, code string) error {
 	body := fmt.Sprintf(
-		"Your verification code is %s\n",
+		"Код подтверждения адреса почты: %s\n",
 		code,
 	)
 
-	return mailer.SendMail(email, "Email verification", body)
+	return mailer.SendMail(email, "Подтверждение почты", body)
 }
 
-func SendTemporaryPasswordEmail(email, password string) error {
-	mailer := NewMailer("mailhog", 1025, "noreply@cityviewpoint.ru")
-
+func SendTemporaryPasswordEmail(mailer *Mailer, email, password string) error {
 	body := fmt.Sprintf(
-		"Your temporary password is %s\n. Change it after login",
+		"Ваш временный пароль: %s\n Смените его после входа",
 		password,
 	)
 
-	return mailer.SendMail(email, "Temporary password", body)
+	return mailer.SendMail(email, "Временный пароль", body)
 }

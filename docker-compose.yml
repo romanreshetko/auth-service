@@ -27,7 +27,6 @@ services:
       - internal_net
     depends_on:
       - postgres_auth
-      - mailhog_auth
     environment:
       DB_HOST: postgres_auth
       DB_PORT: 5432
@@ -35,20 +34,17 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_NAME: ${POSTGRES_DB}
       DB_SSLMODE: disable
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
     volumes:
       - ./keys/private.pem:/app/keys/private.pem:ro
       - ./keys/public.pem:/app/keys/public.pem:ro
     ports:
       - "8080:8080"
 
-  mailhog_auth:
-    image: mailhog/mailhog
-    container_name: mailhog
-    networks:
-      - internal_net
-    ports:
-      - "1025:1025"
-      - "8025:8025"
+
 volumes:
   pgdata:
 

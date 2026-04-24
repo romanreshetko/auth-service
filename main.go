@@ -3,6 +3,7 @@ package main
 import (
 	DB "auth-service/db"
 	"auth-service/handlers"
+	"auth-service/mail"
 	"auth-service/middlewares"
 	"auth-service/utils"
 	"log"
@@ -24,6 +25,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	mailer := mail.NewMailer("noreply@cityviewpoint.ru")
+
 	privateKey, err := utils.LoadPrivateKey("./keys/private.pem")
 	if err != nil {
 		log.Fatal(err)
@@ -35,7 +38,7 @@ func main() {
 
 	authMiddleware := middlewares.AuthMiddleware(publicKey)
 
-	h := handlers.New(db, privateKey)
+	h := handlers.New(db, mailer, privateKey)
 	fs := http.FileServer(http.Dir("./uploads/users"))
 	mux := http.NewServeMux()
 	mux.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -44,6 +47,7 @@ func main() {
 	mux.HandleFunc("/resend", h.ResendEmail)
 	mux.HandleFunc("/login", h.Login)
 	mux.HandleFunc("/user", h.GetUserById)
+	mux.HandleFunc("/user/email", h.GetEmailInfoById)
 	mux.Handle("/user/token", authMiddleware(http.HandlerFunc(h.GetUserByToken)))
 	mux.Handle("/user/update", authMiddleware(http.HandlerFunc(h.UpdateProfile)))
 	mux.Handle("/moderator/create", authMiddleware(http.HandlerFunc(h.CreateModerator)))

@@ -58,6 +58,21 @@ func GetUser(db *sql.DB, id int64) (models.UserInfo, error) {
 	return userInfo, nil
 }
 
+func GetEmailInfo(db *sql.DB, id int64) (models.EmailInfo, error) {
+	var emailInfo models.EmailInfo
+	err := db.QueryRow("SELECT email, nickname FROM users WHERE id = $1 AND role = $2", id, "user").Scan(
+		&emailInfo.Email,
+		&emailInfo.Nickname,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return emailInfo, errors.New("user not found")
+		}
+		return emailInfo, err
+	}
+	return emailInfo, nil
+}
+
 func UpdateUser(db *sql.DB, userId int64, user models.UpdateProfileRequest) error {
 	query := "UPDATE users SET "
 	args := []interface{}{}
@@ -109,7 +124,7 @@ func UpdateUser(db *sql.DB, userId int64, user models.UpdateProfileRequest) erro
 func UpdateUserPoints(db *sql.DB, userID, pointsAdd int64) error {
 	res, err := db.Exec(`
 		UPDATE users
-		SET points = points + $1
+		SET points = GREATEST(0, points + $1)
 		WHERE id = $2
 `, pointsAdd, userID)
 	if err != nil {
