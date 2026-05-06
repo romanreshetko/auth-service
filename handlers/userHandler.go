@@ -34,13 +34,17 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 
 	request := r.FormValue("request")
 	if request == "" {
-		http.Error(w, "missing review", http.StatusBadRequest)
+		http.Error(w, "missing request", http.StatusBadRequest)
 		return
 	}
 
 	var req models.RegisterRequest
 	if err := json.Unmarshal([]byte(request), &req); err != nil {
 		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	if req.Role != "user" {
+		http.Error(w, "invalid role", http.StatusBadRequest)
 		return
 	}
 	if req.Photo != nil {
