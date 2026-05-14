@@ -81,7 +81,6 @@ func (h *Handler) ResendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go func() {
-		log.Println("sending code ", code)
 		err := mail.SendVerificationEmail(h.mailer, req.Email, code)
 		if err != nil {
 			log.Println("failed to send verification email")

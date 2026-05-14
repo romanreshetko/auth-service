@@ -67,7 +67,6 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	go func() {
-		log.Println("sending code ", code)
 		err := mail.SendVerificationEmail(h.mailer, req.Email, code)
 		if err != nil {
 			log.Printf("failed to send verification email %v", err)
